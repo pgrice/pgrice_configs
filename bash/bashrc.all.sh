@@ -51,14 +51,63 @@ alias gf='echo "git fetch" && git fetch'
 alias gm='echo "git merge" && git merge'
 alias gl='echo "git log" && git log'
 alias grb='echo "git rebase -i --autosquash" && git rebase -i --autosquash'
-function worktree {
-    BRANCH=$1
-    WT_PATH=~/trees/$BRANCH
-    git worktree add $WT_PATH -b $BRANCH
-    cd $WT_PATH
-    echo "export BREWST_HOME=$WT_PATH" > $WT_PATH/.envrc
-    direnv allow .
+alias merge-main='git fetch origin main:main && git merge main'
+function gpr {
+    ID=$1
+    echo "git fetch origin pull/$ID/head:PR-$ID && git checkout PR-$ID"
+    git fetch origin pull/$ID/head:PR-$ID && git checkout PR-$ID
 }
+function fetch {
+    BRANCH=$1
+    echo "git fetch origin $BRANCH:$BRANCH"
+    git fetch origin $BRANCH:$BRANCH
+}
+
+function worktree {
+    # If no branch name is provided, make a worktree from the current branch
+    if [ -z "$1" ]; then
+        BRANCH=$(git branch --show-current)
+	if [ "$BRANCH" = 'main' ]; then
+            echo "Cannot create worktree from 'main'"
+	    return 1;
+	fi;
+	echo "Checking out main on current instance"
+	git checkout main
+    # If a branch name is given, create it and make a worktree
+    else
+        BRANCH=$1
+	echo "Creating branch $BRANCH"
+	git branch $BRANCH
+    fi
+    WT_PATH=~/jupiter/trees/$BRANCH
+    git worktree add $WT_PATH $BRANCH
+    cd $WT_PATH
+}
+
+## BRT Aliases
+function bundle {
+  REPO_ROOT=$(git rev-parse --show-toplevel)
+  pushd "$REPO_ROOT"
+   ./autonomy/jupiter/robotics/halo/bundle/build.sh
+  popd
+}
+
+alias awsup="aws sso login --profile jpe && aws configure export-credentials --profile jpe --format env > ~/.cache/aws_credentials.env"
+
+function build_capture_ui {
+  REPO_ROOT=$(git rev-parse --show-toplevel)
+  pushd "$REPO_ROOT"
+  rm -f bazel-bin/autonomy/jupiter/tools/stamps.env
+  bazel build //autonomy/jupiter/robotics/halo/capture_ui:capture_ui_deb
+  popd  
+}
+
+function c {
+  ssh -o StrictHostKeyChecking=no "clay$1"
+}
+
+alias jrobo="ssh -A phillip.grice@llmd-lab-robo001.users.stc02.bluerivertech.info"
+alias abuild="ssh -A phillip.grice@lpgt-athac001.users.stc02.bluerivertech.info"
 
 # Ros Aliases
 #source /opt/ros/$ROS_DISTRO/share/rosbash/rosbash
